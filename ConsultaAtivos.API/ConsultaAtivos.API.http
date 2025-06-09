@@ -1,0 +1,6 @@
+@ConsultaAtivos.API_HostAddress = http://localhost:5228
+
+GET {{ConsultaAtivos.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
