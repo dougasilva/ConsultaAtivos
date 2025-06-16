@@ -10,6 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Infra\**" />
+    <EmbeddedResource Remove="Infra\**" />
+    <None Remove="Infra\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -30,26 +36,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Infra\" />
-    <Folder Include="Mocks\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\ConsultaAtivos.Application\ConsultaAtivos.Application.csproj" />
     <ProjectReference Include="..\ConsultaAtivos.Domain\ConsultaAtivos.Domain.csproj" />
     <ProjectReference Include="..\ConsultaAtivos.Infra\ConsultaAtivos.Infra.csproj" />
   </ItemGroup>
-  
-  <ItemGroup>
-  <None Update="Mocks\AlphaVantage_WeeklyTimeSeries.json">
-    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-  </None>
-</ItemGroup>
-
-<ItemGroup>
-  <None Update="Mocks\Brapi_HistoricalQuote.json">
-    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-  </None>
-</ItemGroup>
 
 </Project>
