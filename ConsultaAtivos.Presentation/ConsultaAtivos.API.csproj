@@ -4,6 +4,10 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+	
+	<!-- Swagger-->
+	<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	<NoWarn>$(NoWarn);1591</NoWarn> <!-- Oculta warning de comentários ausentes -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,10 +17,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ConsultaAtivos.Application\ConsultaAtivos.Application.csproj" />
     <ProjectReference Include="..\ConsultaAtivos.Infra\ConsultaAtivos.Infra.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>
