@@ -7,11 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ConsultaAtivos.Domain\ConsultaAtivos.Domain.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.6" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\" />
+    <ProjectReference Include="..\ConsultaAtivos.Domain\ConsultaAtivos.Domain.csproj" />
   </ItemGroup>
 
 </Project>
