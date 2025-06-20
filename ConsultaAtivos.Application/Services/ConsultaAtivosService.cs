@@ -1,37 +1,25 @@
-﻿using ConsultaAtivos.Application.Dto;
-using ConsultaAtivos.Application.Interfaces;
-using ConsultaAtivos.Application.Mapper;
-using ConsultaAtivos.Domain.Configuration;
+﻿using ConsultaAtivos.Application.Interfaces;
 using ConsultaAtivos.Domain.Entidades;
-using Microsoft.Extensions.Options;
-using System.Text.Json;
 
 namespace ConsultaAtivos.Application.Services
 {
     public class ConsultaAtivosService : IConsultaAtivosService
     {
-        private readonly HttpClient _httpClient;
-        private readonly BrapiSettings _settings;
+        private readonly IBrapiService _brapiService;
 
-        public ConsultaAtivosService(HttpClient httpClient, IOptions<BrapiSettings> options)
+        public ConsultaAtivosService(IBrapiService brapiService)
         {
-            _httpClient = httpClient;
-            _settings = options.Value;
+            _brapiService = brapiService;
         }
 
         public async Task<ResumoCotacao> ObterResumoAsync(string symbol, CancellationToken cancellationToken = default)
         {
-            var url = $"{_settings.BaseUrl}/quote/{symbol}?token={_settings.Token}";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            return await _brapiService.ObterResumoAsync(symbol);
+        }
 
-            response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            var data = JsonSerializer.Deserialize<BrapiResponseDto>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            var ativo = data?.Results?.FirstOrDefault() ?? throw new InvalidOperationException("Ativo não encontrado");
-
-            return BrapiMapper.MapToResumo(ativo);
+        public async Task<Ativo> ObterAtivoComHistoricoAsync(string symbol, string range = "5d", string interval = "1d", CancellationToken cancellationToken = default)
+        {
+            return await _brapiService.ObterAtivoComHistoricoAsync(symbol, range, interval);
         }
     }
 }
