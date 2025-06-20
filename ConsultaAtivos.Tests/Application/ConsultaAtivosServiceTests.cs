@@ -1,9 +1,8 @@
-﻿using ConsultaAtivos.Application.Services;
-using ConsultaAtivos.Domain.Configuration;
-using Microsoft.Extensions.Options;
-using Moq.Protected;
+﻿using ConsultaAtivos.Application.Interfaces;
+using ConsultaAtivos.Application.Services;
+using ConsultaAtivos.Domain.Entidades;
 using Moq;
-using System.Net;
+using Xunit;
 
 namespace ConsultaAtivos.Tests.Application
 {
@@ -13,36 +12,23 @@ namespace ConsultaAtivos.Tests.Application
         public async Task ObterResumoAsync_DeveRetornarResumoValido()
         {
             // Arrange
-            var fakeJson = @"{
-            ""results"": [
-                {
-                    ""symbol"": ""MGLU3"",
-                    ""shortName"": ""MAGAZ LUIZA ON"",
-                    ""regularMarketPrice"": 9.54,
-                    ""regularMarketChange"": 0.6,
-                    ""regularMarketChangePercent"": 6.71,
-                    ""logourl"": ""https://icons.brapi.dev/icons/MGLU3.svg""
-                }
-            ]
-        }";
+            var mockBrapiService = new Mock<IBrapiService>();
 
-            var handler = new Mock<HttpMessageHandler>();
-            handler.Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                )
-                .ReturnsAsync(new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent(fakeJson)
-                });
+            var resumoMock = new ResumoCotacao
+            {
+                Symbol = "MGLU3",
+                NomeCurto = "MAGAZ LUIZA ON",
+                PrecoAtual = 9.54m,
+                VariacaoDia = 0.6m,
+                PercentualVariacao = 6.71m,
+                LogoUrl = "https://icons.brapi.dev/icons/MGLU3.svg"
+            };
 
-            var client = new HttpClient(handler.Object);
-            var options = Options.Create(new BrapiSettings { BaseUrl = "https://brapi.dev/api", Token = "DUMMY" });
+            mockBrapiService
+                .Setup(s => s.ObterResumoAsync("MGLU3"))
+                .ReturnsAsync(resumoMock);
 
-            var service = new ConsultaAtivosService(client, options);
+            var service = new ConsultaAtivosService(mockBrapiService.Object);
 
             // Act
             var resumo = await service.ObterResumoAsync("MGLU3");
@@ -53,7 +39,91 @@ namespace ConsultaAtivos.Tests.Application
             Assert.Equal(9.54m, resumo.PrecoAtual);
             Assert.Equal(0.6m, resumo.VariacaoDia);
             Assert.Equal(6.71m, resumo.PercentualVariacao);
+            Assert.Equal("https://icons.brapi.dev/icons/MGLU3.svg", resumo.LogoUrl);
         }
-    }
 
+        [Fact]
+        public async Task ObterAtivoComHistoricoAsync_DeveRetornarAtivoCompletoComHistorico()
+        {
+            // Arrange
+            var mockBrapiService = new Mock<IBrapiService>();
+
+            var ativoMock = new Ativo
+            {
+                Symbol = "PETR4",
+                NomeCurto = "PETROBRAS PN",
+                NomeLongo = "PETROLEO BRASILEIRO SA PETROBRAS",
+                Moeda = "BRL",
+                LogoUrl = "https://icons.brapi.dev/icons/PETR4.svg",
+                PrecoAtual = 33.50m,
+                VariacaoDia = 0.75m,
+                PercentualVariacao = 2.29m,
+                DataUltimaCotacao = DateTime.Now,
+                PriceEarnings = 4.2m,
+                EarningsPerShare = 7.89m,
+                Historico = new List<HistoricoCotacao>
+        {
+            new HistoricoCotacao
+            {
+                Data = DateTime.Today.AddDays(-1),
+                Abertura = 33.00m,
+                Fechamento = 33.50m,
+                Maximo = 34.00m,
+                Minimo = 32.80m,
+                Volume = 10000000
+            }
+        }
+            };
+
+            mockBrapiService
+                .Setup(s => s.ObterAtivoComHistoricoAsync("PETR4", "5d", "1d"))
+                .ReturnsAsync(ativoMock);
+
+            var service = new ConsultaAtivosService(mockBrapiService.Object);
+
+            // Act
+            var ativo = await service.ObterAtivoComHistoricoAsync("PETR4");
+
+            // Assert
+            Assert.Equal("PETR4", ativo.Symbol);
+            Assert.Equal("PETROBRAS PN", ativo.NomeCurto);
+            Assert.Equal("PETROLEO BRASILEIRO SA PETROBRAS", ativo.NomeLongo);
+            Assert.Equal(33.50m, ativo.PrecoAtual);
+            Assert.NotEmpty(ativo.Historico);
+            Assert.Equal(33.00m, ativo.Historico[0].Abertura);
+        }
+
+        [Fact]
+        public async Task ObterResumoAsync_DeveLancarExcecao_SeNaoEncontrarAtivo()
+        {
+            var mock = new Mock<IBrapiService>();
+            mock.Setup(s => s.ObterResumoAsync(It.IsAny<string>()))
+                .ThrowsAsync(new InvalidOperationException("Ativo não encontrado"));
+
+            var service = new ConsultaAtivosService(mock.Object);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => service.ObterResumoAsync("XXXX"));
+        }
+
+        [Fact]
+        public async Task ObterAtivoComHistoricoAsync_DeveRetornarHistoricoVazio_SeNaoHouverDados()
+        {
+            var mock = new Mock<IBrapiService>();
+            var ativoMock = new Ativo
+            {
+                Symbol = "VALE3",
+                Historico = new List<HistoricoCotacao>() // Sem histórico
+            };
+
+            mock.Setup(s => s.ObterAtivoComHistoricoAsync("VALE3", "5d", "1d"))
+                .ReturnsAsync(ativoMock);
+
+            var service = new ConsultaAtivosService(mock.Object);
+            var ativo = await service.ObterAtivoComHistoricoAsync("VALE3");
+
+            Assert.Empty(ativo.Historico);
+        }
+
+
+    }
 }
